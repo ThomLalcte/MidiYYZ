@@ -104,7 +104,7 @@ public:
 		{
 			// Device is available
 			int nDeviceID = distance(devices.begin(), d);
-			WAVEFORMATEX waveFormat;
+			WAVEFORMATEX waveFormat{};
 			waveFormat.wFormatTag = WAVE_FORMAT_PCM;
 			waveFormat.nSamplesPerSec = m_nSampleRate;
 			waveFormat.wBitsPerSample = sizeof(T) * 8;
@@ -280,25 +280,25 @@ private:
 
 			//T nNewSample = 0;
 			int nCurrentBlock = m_nBlockCurrent * m_nBlockSamples;
-			if (m_soundQueue.size() == 0) {
+			vector<T*> tmpPointer = m_soundQueue.getRightOffsetQueue(m_nBlockSamples);
+			if (tmpPointer.size() == 0) {
 				//fill the current block with emptyness
 				for (unsigned int i = 0; i < m_nBlockSamples; i++) {
 					m_pBlockMemory[nCurrentBlock + i] = 0;
 				}
 			}
-			else if (m_soundQueue.size() == 1) {
+			else if (tmpPointer.size() == 1) {
 				//simply copy the chunk
-				memcpy(&m_pBlockMemory[nCurrentBlock], m_soundQueue.getRightOffsetQueue(m_nBlockSamples)[0], sizeof(T) * m_nBlockSamples);
+				memcpy(&m_pBlockMemory[nCurrentBlock], tmpPointer[0], sizeof(T) * m_nBlockSamples);
 			}
 			else {
 				//merge blocks
 				for (unsigned int i = 0; i < m_nBlockSamples; i++) {
 					m_pBlockMemory[nCurrentBlock + i] = 0;
 				}
-				for (unsigned int i = 0; i < m_soundQueue.size(); i++) {
-					T* tmpPointer = m_soundQueue.getRightOffsetQueue(m_nBlockSamples)[i];
+				for (unsigned int i = 0; i < tmpPointer.size(); i++) {
 					for (unsigned int ii = 0; ii < m_nBlockSamples; ii++) {
-						m_pBlockMemory[nCurrentBlock + ii] += tmpPointer[ii];
+						m_pBlockMemory[nCurrentBlock + ii] += tmpPointer[i][ii];
 					}
 				}
 			}

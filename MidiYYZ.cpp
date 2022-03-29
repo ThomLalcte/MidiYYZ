@@ -27,9 +27,9 @@ int main() {
     for (auto &d : devices) wcout << d << endl;
 
     olcNoiseMaker<int> sound(devices[0], 44100, 1, 4, chunkSize);
+    /*sound.appendQueue(WetRack4);
     sound.appendQueue(WetRack4);
-    sound.appendQueue(WetRack4);
-    sound.appendQueue(WetRack4);
+    sound.appendQueue(WetRack4);*/
 
 
 
