@@ -125,74 +125,22 @@ void printMetadata(const wavMetadata fileMetaData) {
 		<< "Subchunk2Size: " << fileMetaData.Subchunk2Size << endl;
 }
 
-// extrait les données de son des fichier wav du kit de sample.
-//void getAudioData(string fileName, int* chunkl, int* chunkr, const unsigned int* qteSamples, const unsigned int* dataAdress) {
-//	std::ifstream ifile(fileName, std::ifstream::binary);
-//	if (ifile.is_open()) {
-//		ifile.seekg(*dataAdress);
-//		int tmpint = 0;
-//		for (unsigned int i = 0; i < *qteSamples; i++) {
-//			chunkl[i] = ifile.get() | ((ifile.get() << 8) & 0xff00);
-//			chunkr[i] = ifile.get() | ((ifile.get() << 8) & 0xff00);
-//		}
-//		ifile.close();
-//	}
-//}
-//void getAudioData(string fileName, int* chunkl, int* chunkr, const unsigned int* qteSamples, const unsigned int* dataAdress) {
-//	std::ifstream ifile(fileName, std::ifstream::binary);
-//	if (ifile.is_open()) {
-//		ifile.seekg(*dataAdress);
-//		int tmpint = 0;
-//		for (unsigned int i = 0; i < *qteSamples; i++) {
-//			chunkl[i] = ifile.get() | ((ifile.get() << 8) & 0xff00) | ((ifile.get() << 16) & 0xff0000);
-//			chunkl[i] = chunkl[i] | (((chunkl[i] & 0x800000) > 0) * 0xff000000);
-//			chunkr[i] = ifile.get() | ((ifile.get() << 8) & 0xff00) | ((ifile.get() << 16) & 0xff0000);
-//			chunkr[i] = chunkr[i] | (((chunkr[i] & 0x800000) > 0) * 0xff000000);
-//		}
-//		ifile.close();
-//	}
-//}
-void getAudioData(string fileName, int* chunkl, int* chunkr, const unsigned int* qteSamples, const unsigned int* dataAdress) {
+void getAudioData(string fileName, char* chunk, const unsigned int* qteSamples, const unsigned int* dataAdress) {
 	std::ifstream ifile(fileName, std::ifstream::binary);
 	if (ifile.is_open()) {
 		ifile.seekg(*dataAdress);
-		char* buff = new char[*qteSamples * 6];
-		ifile.read(buff, (static_cast<std::streamsize>(*qteSamples)) * 6);
+		ifile.read(chunk, static_cast<std::streamsize>(*qteSamples));
 		ifile.close();
-		unsigned int ii = 0;
-		for (unsigned int i = 0; i < *qteSamples; i++) {
-			ii = 6 * i;
-			memcpy(chunkl + i, buff + ii, 3);
-			chunkl[i] = chunkl[i] | (((chunkl[i] & 0x800000) > 0) * 0xff000000);
-			chunkl[i] = chunkl[i] * 100;
-			memcpy(chunkr + i, buff + ii + 3, 3);
-			chunkr[i] = chunkr[i] | (((chunkr[i] & 0x800000) > 0) * 0xff000000);
-			chunkr[i] = chunkr[i] * 100;
-		}
-	}
-}
-void getAudioData(string fileName, short* chunkl, short* chunkr, const unsigned int* qteSamples, const unsigned int* dataAdress) {
-	std::ifstream ifile(fileName, std::ifstream::binary);
-	if (ifile.is_open()) {
-		ifile.seekg(*dataAdress);
-		char* buff = new char[*qteSamples * 6];
-		ifile.read(buff, (static_cast<std::streamsize>(*qteSamples)) * 6);
-		ifile.close();
-		unsigned int ii = 0;
-		for (unsigned int i = 0; i < *qteSamples; i++) {
-			ii = 6 * i;
-			memcpy(&chunkl[i], buff + ii + 1, 2);
-			memcpy(&chunkr[i], buff + ii + 1, 2);
-		}
 	}
 }
 
-template <class T>
-void storeSamples(T* chunk, const unsigned int* qteSamples, string fileName) {
+void storeSamples(char* chunk, const unsigned int* qteSamples, string fileName) {
 	std::ofstream ifile(fileName);
 	if (ifile.is_open()) {
-		for (unsigned int i = 0; i < *qteSamples; i++) {
-			ifile << chunk[i] << endl;
+		int tmpint = 0;
+		for (unsigned int i = 0; i < *qteSamples; i+=3) {
+			tmpint = (byte)chunk[i] | (byte)(chunk[i] << 8) | (byte)(chunk[i] << 16);
+			ifile << tmpint << endl;
 		}
 		ifile.close();
 	}

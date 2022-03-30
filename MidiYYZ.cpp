@@ -15,22 +15,25 @@ int main() {
     string fileName[] = { "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Rack/Wet/IAR_Wet_Rack4.wav" , "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Kicks/Wet/IAR_Wet_Kick5.wav", "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Crash 1/Wet/IAR_Wet_Crash3.wav" };
     const unsigned int qteSounds = size(fileName);
 
-    soundSample<int>* sounds = new soundSample<int>[qteSounds];
+    soundSample sounds[qteSounds];
     
 
     for (int i = 0; i < qteSounds; i++ ) {
-        sounds[i] = soundSample<int>(fileName[i], chunkSize);
+        sounds[i].init(fileName[i], chunkSize);
     }
 
-    vector<wstring> devices = olcNoiseMaker<int>::Enumerate();
+    cout << "Done loading files\n";
 
-    std::wcout << "Found devices: " << endl;
-    for (auto &d : devices) std::wcout << d << endl;
+    vector<wstring> devices = olcNoiseMaker::Enumerate();
 
-    olcNoiseMaker<int> audioOut(devices[0], 44100, 1, bufferSize / chunkSize, chunkSize);
+    wcout << "Found devices:\n";
+    for (auto &d : devices) wcout << d << endl;
 
-    storeSamples<int>(sounds[0].m_rightSamples, &sounds[0].m_qteSamples, "rightSamples.txt");
-    storeSamples<int>(sounds[0].m_leftSamples, &sounds[0].m_qteSamples,"leftSamples.txt");
+    olcNoiseMaker audioOut(devices[0], 44100, 2, bufferSize / chunkSize, chunkSize);
+
+    storeSamples(sounds[0].m_Samples, &sounds[0].m_SamplesSize, "Samples.txt");
+
+    cout << "Init done\n";
 
     bool lastState[qteSounds]{};
     byte keys[] = { 0x41, 0x53 , 0x44 };
