@@ -85,6 +85,8 @@ public:
 	}
 };
 
+//CRINGE
+
 //file d'attente des son à jouer
 template<class T>
 class soundQueue {
