@@ -2,45 +2,44 @@
 using namespace std;
 
 #include "olcNoiseMaker.h"
-#include "files.h"
 #include "soundSample.h"
 
-//#TODO une queue pour les request de jouage de sample
 //#TODO fonction pour loader tout les sample
 
 int main() {
-    string fileName = "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Rack/Wet/IAR_Wet_Rack4.wav";
+    const unsigned int bufferSize = 1<<12;
+    const unsigned int chunkSize = 1<<8;
+    string fileName[] = { "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Rack/Wet/IAR_Wet_Rack4.wav" , "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Kicks/Wet/IAR_Wet_Kick5.wav", "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Crash 1/Wet/IAR_Wet_Crash3.wav" };
+    const unsigned int qteSounds = size(fileName);
 
-    wavMetadataAdress fileAdresses;
-    wavMetadata fileMetadata = getFileMetadata(fileName);
-    printMetadata(fileMetadata);
+    soundSample<int>* sounds = new soundSample<int>[qteSounds];
+    
 
-    const unsigned int chunkSize = 512;
-    const unsigned int qteSample = fileMetadata.Subchunk2Size / 6 / 2;
-
-    soundSample<int> WetRack4(qteSample, 1, fileMetadata.SampleRate, chunkSize);
-    getAudioData(&fileName, WetRack4.m_leftSamples, WetRack4.m_rightSamples, &qteSample, &fileAdresses.data);
+    for (int i = 0; i < qteSounds; i++ ) {
+        sounds[i] = soundSample<int>(fileName[i], chunkSize);
+    }
 
     vector<wstring> devices = olcNoiseMaker<int>::Enumerate();
 
-    wcout << "Found devices: " << endl;
-    for (auto &d : devices) wcout << d << endl;
+    std::wcout << "Found devices: " << endl;
+    for (auto &d : devices) std::wcout << d << endl;
 
-    olcNoiseMaker<int> sound(devices[0], 44100, 1, 4, chunkSize);
-    /*sound.appendQueue(WetRack4);
-    sound.appendQueue(WetRack4);
-    sound.appendQueue(WetRack4);*/
+    olcNoiseMaker<int> audioOut(devices[0], 44100, 1, bufferSize / chunkSize, chunkSize);
 
+    storeSamples<int>(sounds[0].m_rightSamples, &sounds[0].m_qteSamples, "rightSamples.txt");
+    storeSamples<int>(sounds[0].m_leftSamples, &sounds[0].m_qteSamples,"leftSamples.txt");
 
-
-    bool lastState = 0;
+    bool lastState[qteSounds]{};
+    byte keys[] = { 0x41, 0x53 , 0x44 };
     while (true) {
-        if (GetAsyncKeyState(0x41) & 0x8000 and lastState == 0) {
-            sound.appendQueue(WetRack4);
-            lastState = 1;
-        }
-        else if (!GetAsyncKeyState(0x41) & 0x0001 and lastState == 1) {
-            lastState = 0;
+        for (int i = 0; i < qteSounds; i++) {
+            if (GetAsyncKeyState(keys[i]) & 0x8000 and lastState[i] == 0) {
+                audioOut.appendQueue(sounds[i]);
+                lastState[i] = 1;
+            }
+            else if (!GetAsyncKeyState(keys[i]) & 0x0001 and lastState[i] == 1) {
+                lastState[i] = 0;
+            }
         }
     }
     return 0;

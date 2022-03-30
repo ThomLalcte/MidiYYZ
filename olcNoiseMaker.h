@@ -218,7 +218,7 @@ private:
 	T* m_memPointer;
 	unsigned int m_memBufferSize;
 
-	soundQueue<int> m_soundQueue;
+	soundQueue<T> m_soundQueue;
 
 	T* m_pBlockMemory;
 	WAVEHDR* m_pWaveHeaders;
