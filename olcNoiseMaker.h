@@ -280,7 +280,7 @@ private:
 
 			//T nNewSample = 0;
 			int nCurrentBlock = m_nBlockCurrent * m_nBlockSamples;
-			vector<T*> tmpPointer = m_soundQueue.getRightOffsetQueue(m_nBlockSamples);
+			vector<T*> tmpPointer = m_soundQueue.getLeftOffsetQueue(m_nBlockSamples);
 			if (tmpPointer.size() == 0) {
 				//fill the current block with emptyness
 				for (unsigned int i = 0; i < m_nBlockSamples; i++) {

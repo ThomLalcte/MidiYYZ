@@ -70,7 +70,7 @@ public:
 		m_name = nName;
 		m_ChunkSize = nChunkSize;
 		wavMetadata fileMetadata = getFileMetadata(m_name);
-		m_qteSamples = fileMetadata.Subchunk2Size / fileMetadata.BlockAlign / fileMetadata.NumChannels;
+		m_qteSamples = fileMetadata.Subchunk2Size / fileMetadata.BlockAlign;
 		m_samplerate = fileMetadata.SampleRate;
 		m_rightSamples = new T[(m_qteSamples / m_ChunkSize + 1) * m_ChunkSize]{};
 		m_leftSamples = new T[(m_qteSamples / m_ChunkSize + 1) * m_ChunkSize]{};
@@ -120,17 +120,20 @@ public:
 		m_queue.push_back(soundSampleIterator<T>(nSound.m_qteSamples, nSound.m_leftSamples, nSound.m_rightSamples));
 	}*/
 
-	/*T* getLeftOffsetQueue(const unsigned int nqteSample, unsigned int nqueueElement) {
-		T** offsetQueue = new T * [m_size];
-		for (unsigned int i = 0; i < m_size; i++) {
-			offsetQueue[i] = m_queue[i]->getLeftBufferOffsetPointer();
-			if (m_queue[i]->moveLefttBufferPointer(nqteSample)) {
-				m_queue.erase(m_queue.begin() + i);
+	vector<T*> getLeftOffsetQueue(const unsigned int nqteSample) {
+		vector<T*> offsetQueue;
+		for (unsigned int i = 0; i < m_queueSize; i++) {
+			if (!m_queue[i].testLeftOverflow()) {
+				offsetQueue.push_back(m_queue[i].getLeftBufferOffsetPointer());
+				m_queue[i].moveLeftBufferPointer(nqteSample);
+			}
+			else {
+				this->remove(i);
 				m_size--;
 			}
 		}
 		return offsetQueue;
-	}*/
+	}
 
 	vector<T*> getRightOffsetQueue(const unsigned int nqteSample) {
 		vector<T*> offsetQueue;

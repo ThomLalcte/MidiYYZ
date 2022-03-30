@@ -165,7 +165,7 @@ void getAudioData(string fileName, int* chunkl, int* chunkr, const unsigned int*
 			memcpy(chunkl + i, buff + ii, 3);
 			chunkl[i] = chunkl[i] | (((chunkl[i] & 0x800000) > 0) * 0xff000000);
 			chunkl[i] = chunkl[i] * 100;
-			memcpy(chunkr + i, buff + ii, 3);
+			memcpy(chunkr + i, buff + ii + 3, 3);
 			chunkr[i] = chunkr[i] | (((chunkr[i] & 0x800000) > 0) * 0xff000000);
 			chunkr[i] = chunkr[i] * 100;
 		}

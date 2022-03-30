@@ -4,11 +4,14 @@ using namespace std;
 #include "olcNoiseMaker.h"
 #include "soundSample.h"
 
-//#TODO fonction pour loader tout les sample
+//#TODO fonction pour loader tous les samples
+//#TODO clamp l'audio
+//#TODO Trouver why the fuck est-ce que dans le m_leftSamples ya les données du kick et non du rack4
+//#TODO améliorer la gestion du volume
 
 int main() {
-    const unsigned int bufferSize = 1<<12;
-    const unsigned int chunkSize = 1<<8;
+    const unsigned int bufferSize = 1<<10;
+    const unsigned int chunkSize = 1<<7;
     string fileName[] = { "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Rack/Wet/IAR_Wet_Rack4.wav" , "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Kicks/Wet/IAR_Wet_Kick5.wav", "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Crash 1/Wet/IAR_Wet_Crash3.wav" };
     const unsigned int qteSounds = size(fileName);
 
