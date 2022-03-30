@@ -69,13 +69,12 @@ using namespace std;
 #include "soundSample.h"
 
 
-template<class T>
 class olcNoiseMaker
 {
 public:
-	olcNoiseMaker(wstring sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512)
+	olcNoiseMaker(wstring sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512, unsigned int nBitsPerSample = 24)
 	{
-		Create(sOutputDevice, nSampleRate, nChannels, nBlocks, nBlockSamples);
+		Create(sOutputDevice, nSampleRate, nChannels, nBlocks, nBlockSamples, nBitsPerSample);
 	}
 
 	~olcNoiseMaker()
@@ -83,7 +82,7 @@ public:
 		Destroy();
 	}
 
-	bool Create(wstring sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512)
+	bool Create(wstring sOutputDevice, unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512, unsigned int nBitsPerSample = 24)
 	{
 		m_bReady = false;
 		m_nSampleRate = nSampleRate;
@@ -95,7 +94,8 @@ public:
 		m_pBlockMemory = nullptr;
 		m_pWaveHeaders = nullptr;
 
-		m_userFunction = nullptr;
+		m_bitsPerSample = nBitsPerSample;
+
 
 		// Validate device
 		vector<wstring> devices = Enumerate();
@@ -107,7 +107,7 @@ public:
 			WAVEFORMATEX waveFormat{};
 			waveFormat.wFormatTag = WAVE_FORMAT_PCM;
 			waveFormat.nSamplesPerSec = m_nSampleRate;
-			waveFormat.wBitsPerSample = sizeof(T) * 8;
+			waveFormat.wBitsPerSample = m_bitsPerSample;
 			waveFormat.nChannels = m_nChannels;
 			waveFormat.nBlockAlign = (waveFormat.wBitsPerSample / 8) * waveFormat.nChannels;
 			waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
@@ -119,10 +119,10 @@ public:
 		}
 
 		// Allocate Wave|Block Memory
-		m_pBlockMemory = new T[m_nBlockCount * m_nBlockSamples];
+		m_pBlockMemory = new char[m_nChannels * m_nBlockCount * m_nBlockSamples * m_bitsPerSample / 8];
 		if (m_pBlockMemory == nullptr)
 			return Destroy();
-		ZeroMemory(m_pBlockMemory, sizeof(T) * m_nBlockCount * m_nBlockSamples);
+		ZeroMemory(m_pBlockMemory, m_nBlockCount * m_nBlockSamples * m_bitsPerSample / 8);
 
 		m_pWaveHeaders = new WAVEHDR[m_nBlockCount];
 		if (m_pWaveHeaders == nullptr)
@@ -132,8 +132,8 @@ public:
 		// Link headers to block memory
 		for (unsigned int n = 0; n < m_nBlockCount; n++)
 		{
-			m_pWaveHeaders[n].dwBufferLength = m_nBlockSamples * sizeof(T);
-			m_pWaveHeaders[n].lpData = (LPSTR)(m_pBlockMemory + (n * m_nBlockSamples));
+			m_pWaveHeaders[n].dwBufferLength = m_nBlockSamples * 3 * m_nChannels;
+			m_pWaveHeaders[n].lpData = (LPSTR)(m_pBlockMemory + (n * m_nBlockSamples * 3 * m_nChannels));
 		}
 
 		m_bReady = true;
@@ -158,18 +158,6 @@ public:
 		m_thread.join();
 	}
 
-	// Override to process current sample
-	virtual double UserProcess(double dTime)
-	{
-		return 0.0;
-	}
-
-	double GetTime()
-	{
-		return m_dGlobalTime;
-	}
-
-
 
 public:
 	static vector<wstring> Enumerate()
@@ -183,31 +171,12 @@ public:
 		return sDevices;
 	}
 
-	void SetUserFunction(void(*func)(T*))
-	{
-		m_userFunction = func;
-	}
-
-	void setReadBuffer(int* memPointer, const unsigned int* size) {
-		m_memPointer = memPointer;
-		m_memBufferSize = *size;
-	}
-
-	void appendQueue(soundSample<T>& nSound) {
+	void appendQueue(soundSample& nSound) {
 		m_soundQueue.append(nSound);
-	}
-
-	int clip(int dSample, int dMax)
-	{
-		if (dSample >= 0.0)
-			return fmin(dSample, dMax);
-		else
-			return fmax(dSample, -dMax);
 	}
 
 
 private:
-	void(*m_userFunction)(T*);
 
 	unsigned int m_nSampleRate;
 	unsigned int m_nChannels;
@@ -215,12 +184,14 @@ private:
 	unsigned int m_nBlockSamples;
 	unsigned int m_nBlockCurrent;
 
-	T* m_memPointer;
+	unsigned int m_bitsPerSample;
+
+	char* m_memPointer;
 	unsigned int m_memBufferSize;
 
-	soundQueue<T> m_soundQueue;
+	soundQueue m_soundQueue;
 
-	T* m_pBlockMemory;
+	char* m_pBlockMemory;
 	WAVEHDR* m_pWaveHeaders;
 	HWAVEOUT m_hwDevice;
 
@@ -229,8 +200,6 @@ private:
 	atomic<unsigned int> m_nBlockFree;
 	condition_variable m_cvBlockNotZero;
 	mutex m_muxBlockNotZero;
-
-	atomic<double> m_dGlobalTime;
 
 	// Handler for soundcard request for more data
 	void waveOutProc(HWAVEOUT hWaveOut, UINT uMsg, DWORD dwParam1, DWORD dwParam2)
@@ -254,13 +223,6 @@ private:
 	// and then issued to the soundcard.
 	void MainThread()
 	{
-		m_dGlobalTime = 0.0;
-		double dTimeStep = 1.0 / (double)m_nSampleRate;
-
-		// Goofy hack to get maximum integer for a type at run-time
-		T nMaxSample = (T)pow(2, (sizeof(T) * 8) - 1) - 1;
-		double dMaxSample = (double)nMaxSample;
-		T nPreviousSample = 0;
 
 		while (m_bReady)
 		{
@@ -280,7 +242,7 @@ private:
 
 			//T nNewSample = 0;
 			int nCurrentBlock = m_nBlockCurrent * m_nBlockSamples;
-			vector<T*> tmpPointer = m_soundQueue.getLeftOffsetQueue(m_nBlockSamples);
+			vector<char*> tmpPointer = m_soundQueue.getOffsetQueue(m_nBlockSamples);
 			if (tmpPointer.size() == 0) {
 				//fill the current block with emptyness
 				for (unsigned int i = 0; i < m_nBlockSamples; i++) {
@@ -289,7 +251,7 @@ private:
 			}
 			else if (tmpPointer.size() == 1) {
 				//simply copy the chunk
-				memcpy(&m_pBlockMemory[nCurrentBlock], tmpPointer[0], sizeof(T) * m_nBlockSamples);
+				memcpy(&m_pBlockMemory[nCurrentBlock], tmpPointer[0], 6 * m_nBlockSamples);
 			}
 			else {
 				//merge blocks
