@@ -55,7 +55,7 @@ public:
 		m_SamplesSize = fileMetadata.Subchunk2Size;
 		m_samplerate = fileMetadata.SampleRate;
 		m_Samples = new char[(m_SamplesSize / m_ChunkSize + 1) * m_ChunkSize]{};
-		getAudioData(m_name, m_Samples, &m_SamplesSize, &adresses::data);
+		getAudioData(m_name, m_Samples, &m_SamplesSize, &adresses::data, 24);
 	}
 
 	soundSample() {}
@@ -71,7 +71,7 @@ public:
 		m_SamplesSize = fileMetadata.Subchunk2Size;
 		m_samplerate = fileMetadata.SampleRate;
 		m_Samples = new char[(m_SamplesSize / m_ChunkSize + 1) * m_ChunkSize]{};
-		getAudioData(m_name, m_Samples, &m_SamplesSize, &adresses::data);
+		getAudioData(m_name, m_Samples, &m_SamplesSize, &adresses::data, 24);
 	}
 };
 

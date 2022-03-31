@@ -122,7 +122,7 @@ public:
 		m_pBlockMemory = new char[m_nChannels * m_nBlockCount * m_nBlockSamples * m_bitsPerSample / 8];
 		if (m_pBlockMemory == nullptr)
 			return Destroy();
-		ZeroMemory(m_pBlockMemory, m_nBlockCount * m_nBlockSamples * m_bitsPerSample / 8);
+		ZeroMemory(m_pBlockMemory, m_nChannels * m_nBlockCount * m_nBlockSamples * m_bitsPerSample / 8);
 
 		m_pWaveHeaders = new WAVEHDR[m_nBlockCount];
 		if (m_pWaveHeaders == nullptr)
@@ -132,8 +132,8 @@ public:
 		// Link headers to block memory
 		for (unsigned int n = 0; n < m_nBlockCount; n++)
 		{
-			m_pWaveHeaders[n].dwBufferLength = m_nBlockSamples * 3 * m_nChannels;
-			m_pWaveHeaders[n].lpData = (LPSTR)(m_pBlockMemory + (n * m_nBlockSamples * 3 * m_nChannels));
+			m_pWaveHeaders[n].dwBufferLength = m_nBlockSamples * m_bitsPerSample / 8 * m_nChannels;
+			m_pWaveHeaders[n].lpData = (LPSTR)(m_pBlockMemory + (n * m_nBlockSamples * m_bitsPerSample / 8 * m_nChannels));
 		}
 
 		m_bReady = true;
@@ -251,7 +251,7 @@ private:
 			}
 			else if (tmpPointer.size() == 1) {
 				//simply copy the chunk
-				memcpy(&m_pBlockMemory[nCurrentBlock], tmpPointer[0], 6 * m_nBlockSamples);
+				memcpy(&m_pBlockMemory[nCurrentBlock], tmpPointer[0], m_nChannels * m_bitsPerSample / 8 * m_nBlockSamples);
 			}
 			else {
 				//merge blocks

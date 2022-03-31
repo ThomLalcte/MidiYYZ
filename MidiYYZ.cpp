@@ -29,9 +29,9 @@ int main() {
     wcout << "Found devices:\n";
     for (auto &d : devices) wcout << d << endl;
 
-    olcNoiseMaker audioOut(devices[0], 44100, 2, bufferSize / chunkSize, chunkSize);
+    olcNoiseMaker audioOut(devices[0], 44100, 2, bufferSize / chunkSize, chunkSize, 16);
 
-    storeSamples(sounds[0].m_Samples, &sounds[0].m_SamplesSize, "Samples.txt");
+    storeSamples(sounds[0].m_Samples, &sounds[0].m_SamplesSize, "Samples.txt", 24, 24);
 
     cout << "Init done\n";
 

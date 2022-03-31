@@ -125,22 +125,48 @@ void printMetadata(const wavMetadata fileMetaData) {
 		<< "Subchunk2Size: " << fileMetaData.Subchunk2Size << endl;
 }
 
-void getAudioData(string fileName, char* chunk, const unsigned int* qteSamples, const unsigned int* dataAdress) {
+void getAudioData(string fileName, char* chunk, const unsigned int* SamplesSize, const unsigned int* dataAdress, const unsigned int bitPerOutputSample) {
 	std::ifstream ifile(fileName, std::ifstream::binary);
 	if (ifile.is_open()) {
-		ifile.seekg(*dataAdress);
-		ifile.read(chunk, static_cast<std::streamsize>(*qteSamples));
+		if (bitPerOutputSample == 24) {
+			ifile.seekg(*dataAdress);
+			ifile.read(chunk, static_cast<std::streamsize>(*SamplesSize));
+		}
+		else if (bitPerOutputSample == 16) {
+			char* buffer = new char[*SamplesSize];
+			ifile.seekg(*dataAdress);
+			ifile.read(chunk, static_cast<std::streamsize>(*SamplesSize));
+			unsigned int chunkOffset = 0;
+			for (unsigned int i = 0; i < *SamplesSize; i += 6) {
+				memcpy(chunk + chunkOffset, buffer + i, 2);
+				chunkOffset += 2;
+				memcpy(chunk + chunkOffset, buffer + i + 3, 2);
+				chunkOffset += 2;
+			}
+		}
 		ifile.close();
 	}
 }
 
-void storeSamples(char* chunk, const unsigned int* qteSamples, string fileName) {
+void storeSamples(char* chunk, const unsigned int* SamplesSize, string fileName, const unsigned int bitPerOutputSample, const unsigned int bitPerInputSample) {
 	std::ofstream ifile(fileName);
 	if (ifile.is_open()) {
-		int tmpint = 0;
-		for (unsigned int i = 0; i < *qteSamples; i+=3) {
-			tmpint = (byte)chunk[i] | (byte)(chunk[i] << 8) | (byte)(chunk[i] << 16);
-			ifile << tmpint << endl;
+		if (bitPerOutputSample == 24) {
+			int tmpint = 0;
+			for (unsigned int i = 0; i < *SamplesSize; i += bitPerInputSample/4) {
+				tmpint = 0;
+				memcpy(&tmpint, chunk + i, 3);
+				tmpint = tmpint | (0xff000000 * ((tmpint & 0x800000) >> 23));
+				ifile << tmpint << endl;
+			}
+		}
+		else if (bitPerOutputSample == 16) {
+			short tmpint = 0;
+			for (unsigned int i = 0; i < *SamplesSize; i += bitPerInputSample/4) {
+				tmpint = 0;
+				memcpy(&tmpint, chunk + i + 1, 2);
+				ifile << tmpint << endl;
+			}
 		}
 		ifile.close();
 	}
