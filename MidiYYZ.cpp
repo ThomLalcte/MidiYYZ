@@ -10,10 +10,10 @@ using namespace std;
 //#TODO améliorer la gestion du volume
 
 int main() {
-    const unsigned int bufferSize = 1<<10;
-    const unsigned int chunkSize = 1<<7;
-    const unsigned int channels = 1;
-    const unsigned int bitPerSamples = 16;
+    const unsigned int bufferSize = 1<<11;
+    const unsigned int chunkSize = 1<<8;
+    const unsigned int channels = 2;
+    const unsigned int bitPerSamples = 24;
     string fileName[] = { "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Rack/Wet/IAR_Wet_Rack4.wav" , "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Kicks/Wet/IAR_Wet_Kick5.wav", "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Crash 1/Wet/IAR_Wet_Crash3.wav" };
     const unsigned int qteSounds = size(fileName);
 

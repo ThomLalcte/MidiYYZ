@@ -5,7 +5,7 @@
 //sert à itérer sur un son. se sert d'un pointeur pour donner la bonne adresse à lire
 class soundSampleIterator {
 public:
-	unsigned int m_currentOffset = 1;
+	unsigned int m_currentOffset = 0;
 	unsigned int m_SamplesSize = 0;
 	char* m_Samples;
 	soundSampleIterator(const unsigned int nQtesample, char* nSamples) {
@@ -14,7 +14,7 @@ public:
 	}
 	soundSampleIterator() {
 		m_SamplesSize = 0;
-		m_currentOffset = 1U;
+		m_currentOffset = 0;
 		m_Samples = nullptr;
 	}
 	char* getBufferOffsetPointer() {
@@ -84,7 +84,7 @@ public:
 class soundQueue {
 public:
 	static const unsigned int m_queueSize = 1<<6;
-	unsigned int m_size = 0;						//<------- prend des valeurs gigantesque pour aucune raison
+	unsigned int m_size = 0;
 	soundSampleIterator m_queue[m_queueSize];
 
 	soundQueue(){}
@@ -103,7 +103,7 @@ public:
 
 	void remove(const unsigned int element) {
 		m_queue[element].m_SamplesSize = 0;
-		m_queue[element].m_currentOffset = 1U;
+		m_queue[element].m_currentOffset = 0;
 	}
 
 	vector<char*> getOffsetQueue(const unsigned int nqteSample) {

@@ -240,7 +240,7 @@ private:
 			vector<char*> tmpPointer = m_soundQueue.getOffsetQueue(m_nBlockSamples);
 			if (tmpPointer.size() == 0) {
 				//fill the current block with emptyness
-				for (unsigned int i = 0; i < m_nBlockSamples; i++) {
+				for (unsigned int i = 0; i < m_nBlockSamples * m_nChannels * m_bitsPerSample / 8; i++) {
 					*(m_pWaveHeaders[m_nBlockCurrent].lpData + i) = 0;
 				}
 			}
