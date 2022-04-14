@@ -109,8 +109,8 @@ public:
 			waveFormat.nSamplesPerSec = m_nSampleRate;
 			waveFormat.wBitsPerSample = m_bitsPerSample;
 			waveFormat.nChannels = m_nChannels;
-			waveFormat.nBlockAlign = (waveFormat.wBitsPerSample / 8) * waveFormat.nChannels;
-			waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
+			waveFormat.nBlockAlign = (m_bitsPerSample / 8) * m_nChannels;
+			waveFormat.nAvgBytesPerSec = m_nSampleRate * (m_bitsPerSample / 8) * m_nChannels;
 			waveFormat.cbSize = 0;
 
 			// Open Device if valid
@@ -119,7 +119,7 @@ public:
 		}
 
 		// Allocate Wave|Block Memory
-		m_pBlockMemory = new char[m_nChannels * m_nBlockCount * m_nBlockSamples * m_bitsPerSample / 8];
+		m_pBlockMemory = new char[m_nChannels * m_nBlockCount * m_nBlockSamples * m_bitsPerSample / 8]{};
 		if (m_pBlockMemory == nullptr)
 			return Destroy();
 		ZeroMemory(m_pBlockMemory, m_nChannels * m_nBlockCount * m_nBlockSamples * m_bitsPerSample / 8);
@@ -186,9 +186,6 @@ private:
 
 	unsigned int m_bitsPerSample;
 
-	char* m_memPointer;
-	unsigned int m_memBufferSize;
-
 	soundQueue m_soundQueue;
 
 	char* m_pBlockMemory;
@@ -240,32 +237,31 @@ private:
 			if (m_pWaveHeaders[m_nBlockCurrent].dwFlags & WHDR_PREPARED)
 				waveOutUnprepareHeader(m_hwDevice, &m_pWaveHeaders[m_nBlockCurrent], sizeof(WAVEHDR));
 
-			//T nNewSample = 0;
-			int nCurrentBlock = m_nBlockCurrent * m_nBlockSamples;
 			vector<char*> tmpPointer = m_soundQueue.getOffsetQueue(m_nBlockSamples);
 			if (tmpPointer.size() == 0) {
 				//fill the current block with emptyness
 				for (unsigned int i = 0; i < m_nBlockSamples; i++) {
-					m_pBlockMemory[nCurrentBlock + i] = 0;
+					*(m_pWaveHeaders[m_nBlockCurrent].lpData + i) = 0;
 				}
 			}
 			else if (tmpPointer.size() == 1) {
 				//simply copy the chunk
-				memcpy(&m_pBlockMemory[nCurrentBlock], tmpPointer[0], m_nChannels * m_bitsPerSample / 8 * m_nBlockSamples);
+				memcpy(m_pWaveHeaders[m_nBlockCurrent].lpData, tmpPointer[0], m_nChannels * m_bitsPerSample / 8 * m_nBlockSamples);
 			}
 			else {
 				//merge blocks
 				for (unsigned int i = 0; i < m_nBlockSamples; i++) {
-					m_pBlockMemory[nCurrentBlock + i] = 0;
+					//m_pBlockMemory[nCurrentBlock + i] = 0;
+					*(m_pWaveHeaders[m_nBlockCurrent].lpData + i) = 0;
 				}
 				for (unsigned int i = 0; i < tmpPointer.size(); i++) {
 					for (unsigned int ii = 0; ii < m_nBlockSamples; ii++) {
-						m_pBlockMemory[nCurrentBlock + ii] += tmpPointer[i][ii];
+						//m_pBlockMemory[nCurrentBlock + ii] += tmpPointer[i][ii];
+						*(m_pWaveHeaders[m_nBlockCurrent].lpData + ii) += tmpPointer[i][ii];
 					}
 				}
 			}
-				
-
+		
 			// Send block to sound device
 			waveOutPrepareHeader(m_hwDevice, &m_pWaveHeaders[m_nBlockCurrent], sizeof(WAVEHDR));
 			waveOutWrite(m_hwDevice, &m_pWaveHeaders[m_nBlockCurrent], sizeof(WAVEHDR));

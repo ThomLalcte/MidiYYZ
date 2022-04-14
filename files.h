@@ -125,19 +125,39 @@ void printMetadata(const wavMetadata fileMetaData) {
 		<< "Subchunk2Size: " << fileMetaData.Subchunk2Size << endl;
 }
 
-void getAudioData(string fileName, char* chunk, const unsigned int* SamplesSize, const unsigned int* dataAdress, const unsigned int bitPerOutputSample) {
+void getAudioData(string fileName, char* chunk, unsigned int dataSize, const unsigned int* dataAdress, const unsigned int bitPerOutputSample, const unsigned int nChannels) {
 	std::ifstream ifile(fileName, std::ifstream::binary);
 	if (ifile.is_open()) {
-		if (bitPerOutputSample == 24) {
+		if (bitPerOutputSample == 24 and nChannels == 2) {
 			ifile.seekg(*dataAdress);
-			ifile.read(chunk, static_cast<std::streamsize>(*SamplesSize));
+			ifile.read(chunk, static_cast<std::streamsize>(dataSize));
 		}
-		else if (bitPerOutputSample == 16) {
-			char* buffer = new char[*SamplesSize];
+		else if (bitPerOutputSample == 24 and nChannels == 1) {
+			char* buffer = new char[dataSize];
 			ifile.seekg(*dataAdress);
-			ifile.read(chunk, static_cast<std::streamsize>(*SamplesSize));
+			ifile.read(buffer, static_cast<std::streamsize>(dataSize));
 			unsigned int chunkOffset = 0;
-			for (unsigned int i = 0; i < *SamplesSize; i += 6) {
+			for (unsigned int i = 0; i < dataSize; i += 6) {
+				memcpy(chunk + chunkOffset, buffer + i, 3);
+				chunkOffset += 3;
+			}
+		}
+		else if (bitPerOutputSample == 16 and nChannels == 1) {
+			char* buffer = new char[dataSize];
+			ifile.seekg(*dataAdress);
+			ifile.read(buffer, static_cast<std::streamsize>(dataSize));
+			unsigned int chunkOffset = 0;
+			for (unsigned int i = 0; i < dataSize; i += 6) {
+				memcpy(chunk + chunkOffset, buffer + i + 1, 2);
+				chunkOffset += 2;
+			}
+		}
+		else if (bitPerOutputSample == 16 and nChannels == 2) {
+			char* buffer = new char[dataSize];
+			ifile.seekg(*dataAdress);
+			ifile.read(buffer, static_cast<std::streamsize>(dataSize));
+			unsigned int chunkOffset = 0;
+			for (unsigned int i = 0; i < dataSize; i += 6) {
 				memcpy(chunk + chunkOffset, buffer + i, 2);
 				chunkOffset += 2;
 				memcpy(chunk + chunkOffset, buffer + i + 3, 2);
@@ -148,12 +168,12 @@ void getAudioData(string fileName, char* chunk, const unsigned int* SamplesSize,
 	}
 }
 
-void storeSamples(char* chunk, const unsigned int* SamplesSize, string fileName, const unsigned int bitPerOutputSample, const unsigned int bitPerInputSample) {
+void storeSamples(char* chunk, const unsigned int* SamplesSize, string fileName, const unsigned int bitPerOutputSample, const unsigned int bitPerInputSample, const unsigned int nChannels) {
 	std::ofstream ifile(fileName);
 	if (ifile.is_open()) {
 		if (bitPerOutputSample == 24) {
 			int tmpint = 0;
-			for (unsigned int i = 0; i < *SamplesSize; i += bitPerInputSample/4) {
+			for (unsigned int i = 0; i < *SamplesSize; i += (bitPerInputSample / 8) * nChannels) {
 				tmpint = 0;
 				memcpy(&tmpint, chunk + i, 3);
 				tmpint = tmpint | (0xff000000 * ((tmpint & 0x800000) >> 23));
@@ -162,9 +182,9 @@ void storeSamples(char* chunk, const unsigned int* SamplesSize, string fileName,
 		}
 		else if (bitPerOutputSample == 16) {
 			short tmpint = 0;
-			for (unsigned int i = 0; i < *SamplesSize; i += bitPerInputSample/4) {
+			for (unsigned int i = 0; i < *SamplesSize; i += (bitPerInputSample / 8) * nChannels) {
 				tmpint = 0;
-				memcpy(&tmpint, chunk + i + 1, 2);
+				memcpy(&tmpint, chunk + i + (bitPerInputSample==24), 2);
 				ifile << tmpint << endl;
 			}
 		}

@@ -12,6 +12,8 @@ using namespace std;
 int main() {
     const unsigned int bufferSize = 1<<10;
     const unsigned int chunkSize = 1<<7;
+    const unsigned int channels = 1;
+    const unsigned int bitPerSamples = 16;
     string fileName[] = { "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Rack/Wet/IAR_Wet_Rack4.wav" , "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Kicks/Wet/IAR_Wet_Kick5.wav", "S:/Projets/YYZ/Ludwig Sparkle Multi-Velocity/24 Bit WAV Files/Crash 1/Wet/IAR_Wet_Crash3.wav" };
     const unsigned int qteSounds = size(fileName);
 
@@ -19,7 +21,7 @@ int main() {
     
 
     for (int i = 0; i < qteSounds; i++ ) {
-        sounds[i].init(fileName[i], chunkSize);
+        sounds[i].init(fileName[i], chunkSize, bitPerSamples, channels);
     }
 
     cout << "Done loading files\n";
@@ -29,11 +31,13 @@ int main() {
     wcout << "Found devices:\n";
     for (auto &d : devices) wcout << d << endl;
 
-    olcNoiseMaker audioOut(devices[0], 44100, 2, bufferSize / chunkSize, chunkSize, 16);
+    olcNoiseMaker audioOut(devices[0], 44100, channels, bufferSize / chunkSize, chunkSize, bitPerSamples);
 
-    storeSamples(sounds[0].m_Samples, &sounds[0].m_SamplesSize, "Samples.txt", 24, 24);
+    storeSamples(sounds[0].m_Samples, &sounds[0].m_SamplesSizeBytes, "Samples.txt", bitPerSamples, bitPerSamples, channels);
 
     cout << "Init done\n";
+
+    audioOut.appendQueue(sounds[0]);
 
     bool lastState[qteSounds]{};
     byte keys[] = { 0x41, 0x53 , 0x44 };
