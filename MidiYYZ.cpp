@@ -33,11 +33,12 @@ int main() {
 
     olcNoiseMaker audioOut(devices[0], 44100, channels, bufferSize / chunkSize, chunkSize, bitPerSamples);
 
-    storeSamples(sounds[0].m_Samples, &sounds[0].m_SamplesSizeBytes, "Samples.txt", bitPerSamples, bitPerSamples, channels);
+    storeSamples(sounds[1].m_Samples, &sounds[1].m_SamplesSizeBytes, "Samples.txt", bitPerSamples, bitPerSamples, channels);
 
     cout << "Init done\n";
 
     audioOut.appendQueue(sounds[0]);
+    //audioOut.appendQueue(sounds[1]);
 
     bool lastState[qteSounds]{};
     byte keys[] = { 0x41, 0x53 , 0x44 };

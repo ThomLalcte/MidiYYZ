@@ -240,9 +240,7 @@ private:
 			vector<char*> tmpPointer = m_soundQueue.getOffsetQueue(m_nBlockSamples);
 			if (tmpPointer.size() == 0) {
 				//fill the current block with emptyness
-				for (unsigned int i = 0; i < m_nBlockSamples * m_nChannels * m_bitsPerSample / 8; i++) {
-					*(m_pWaveHeaders[m_nBlockCurrent].lpData + i) = 0;
-				}
+				ZeroMemory(m_pWaveHeaders[m_nBlockCurrent].lpData, m_nChannels * m_nBlockSamples * 3);
 			}
 			else if (tmpPointer.size() == 1) {
 				//simply copy the chunk
@@ -250,18 +248,21 @@ private:
 			}
 			else {
 				//merge blocks
-				for (unsigned int i = 0; i < m_nBlockSamples; i++) {
-					//m_pBlockMemory[nCurrentBlock + i] = 0;
-					*(m_pWaveHeaders[m_nBlockCurrent].lpData + i) = 0;
-				}
-				for (unsigned int i = 0; i < tmpPointer.size(); i++) {
-					for (unsigned int ii = 0; ii < m_nBlockSamples; ii++) {
-						//m_pBlockMemory[nCurrentBlock + ii] += tmpPointer[i][ii];
-						*(m_pWaveHeaders[m_nBlockCurrent].lpData + ii) += tmpPointer[i][ii];
+				if (m_bitsPerSample == 24) {
+					int* tmpBuffer = new int[m_nBlockSamples * m_nChannels]{};
+					for (unsigned int i = 0; i < tmpPointer.size(); i++) {
+						for (unsigned int ii = 0; ii < m_nBlockSamples * m_nChannels; ii++) {
+							int a = (*((int*)(&tmpPointer[i][ii * 3]))) & 0x00ffffff;	//grosse ligne qui veut dire prendre les points des samples, les convertir en int et discard le dernier octets
+							a = a | (0xff000000 * ((a & 0x800000) >> 23));
+							tmpBuffer[ii] += a;
+						}
+					}
+					for (unsigned int ii = 0; ii < m_nBlockSamples * m_nChannels; ii++) {
+						memcpy(m_pWaveHeaders[m_nBlockCurrent].lpData + ii * 3, &tmpBuffer[ii], 3);
 					}
 				}
 			}
-		
+			
 			// Send block to sound device
 			waveOutPrepareHeader(m_hwDevice, &m_pWaveHeaders[m_nBlockCurrent], sizeof(WAVEHDR));
 			waveOutWrite(m_hwDevice, &m_pWaveHeaders[m_nBlockCurrent], sizeof(WAVEHDR));

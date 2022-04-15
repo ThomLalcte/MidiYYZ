@@ -42,6 +42,7 @@ public:
 	unsigned int m_BitPerSamples = 24;		//en bit
 	string m_name = "jimbo";
 	char* m_Samples = nullptr;
+
 	//soundSample(const unsigned int nQtesample, unsigned int nSampleRate, unsigned int nChunkSize, string nName) {
 	//	m_SamplesSizeBytes = nQtesample;
 	//	m_ChunkSize = nChunkSize;
@@ -73,7 +74,7 @@ public:
 		m_Channels = nChannels;
 		m_BitPerSamples = nBitPerSamples;
 		wavMetadata fileMetadata = getFileMetadata(m_name);
-		m_SamplesSizeBytes = fileMetadata.Subchunk2Size / m_Channels / (m_BitPerSamples / 8);
+		m_SamplesSizeBytes = fileMetadata.Subchunk2Size / m_Channels / 3 * (m_BitPerSamples / 8);
 		m_samplerate = fileMetadata.SampleRate;
 		m_Samples = new char[((m_SamplesSizeBytes * (m_BitPerSamples / 8) * nChannels) / m_ChunkSize + 1) * m_ChunkSize]{};
 		getAudioData(m_name, m_Samples, fileMetadata.Subchunk2Size, &adresses::data, m_BitPerSamples, m_Channels);
