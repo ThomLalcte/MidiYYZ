@@ -3,43 +3,28 @@
 #include "files.h"
 
 //sert à itérer sur un son. se sert d'un pointeur pour donner la bonne adresse à lire
-template<class T>
 class soundSampleIterator {
 public:
-	unsigned int m_currentRightOffset = 0;
-	unsigned int m_currentLeftOffset = 0;
-	unsigned int m_qteSamples;
-	T* m_leftSamples;
-	T* m_rightSamples;
-	soundSampleIterator(const unsigned int nQtesample, T* nleftSamples, T* nrightSamples) {
-		m_qteSamples = nQtesample;
-		m_leftSamples = nleftSamples;
-		m_rightSamples = nrightSamples;
+	unsigned int m_currentOffset = 0;
+	unsigned int m_SamplesSize = 0;
+	char* m_Samples;
+	soundSampleIterator(const unsigned int nQtesample, char* nSamples) {
+		m_SamplesSize = nQtesample;
+		m_Samples = nSamples;
 	}
 	soundSampleIterator() {
-		m_qteSamples = 0;
-		m_currentRightOffset = 1U;
-		m_currentLeftOffset = 1U;
-		m_leftSamples = nullptr;
-		m_rightSamples = nullptr;
+		m_SamplesSize = 0;
+		m_currentOffset = 0;
+		m_Samples = nullptr;
 	}
-	T* getLeftBufferOffsetPointer() {
-		return &m_leftSamples[m_currentLeftOffset];
+	char* getBufferOffsetPointer() {
+		return &m_Samples[m_currentOffset];
 	}
-	T* getRightBufferOffsetPointer() {
-		return &m_rightSamples[m_currentRightOffset];
+	void moveBufferPointer(const unsigned int nqteSample) {
+		m_currentOffset += nqteSample * 6;
 	}
-	void moveLeftBufferPointer(const unsigned int nqteSample) {
-		m_currentLeftOffset += nqteSample;
-	}
-	void moveRightBufferPointer(const unsigned int nqteSample) {
-		m_currentRightOffset += nqteSample;
-	}
-	bool testLeftOverflow() {
-		return m_currentLeftOffset >= m_qteSamples;
-	}
-	bool testRightOverflow() {
-		return m_currentRightOffset >= m_qteSamples;
+	bool testOverflow() {
+		return m_currentOffset >= m_SamplesSize;
 	}
 	~soundSampleIterator() {
 		cout << "iterator got deleted\n";
@@ -48,57 +33,68 @@ public:
 
 
 //contien les donnés du son, on pourrait dire que c'est le .wav lui même
-template<class T>
 class soundSample {
 public:
-	unsigned int m_qteSamples = 1;
-	unsigned int m_ChunkSize = 512;
-	unsigned int m_samplerate = 44100;
+	unsigned int m_SamplesSizeBytes = 1;	//en octets
+	unsigned int m_ChunkSize = 512;			//en échantillions
+	unsigned int m_samplerate = 44100;		//en hertz
+	unsigned int m_Channels = 1;			//en nb de channels
+	unsigned int m_BitPerSamples = 24;		//en bit
 	string m_name = "jimbo";
-	T* m_leftSamples;// = new T[(m_qteSamples / m_ChunkSize + 1) * m_ChunkSize]{};
-	T* m_rightSamples;// = new T[(m_qteSamples / m_ChunkSize + 1) * m_ChunkSize]{};
-	soundSample(const unsigned int nQtesample, unsigned int nSampleRate, unsigned int nChunkSize, string nName) {
-		m_qteSamples = nQtesample;
-		m_ChunkSize = nChunkSize;
-		m_samplerate = nSampleRate;
-		m_name = nName;
-		m_rightSamples = new T[(m_qteSamples / m_ChunkSize + 1) * m_ChunkSize]{};
-		m_leftSamples = new T[(m_qteSamples / m_ChunkSize + 1) * m_ChunkSize]{};
-	}
+	char* m_Samples = nullptr;
 
-	soundSample(string nName, const unsigned int nChunkSize) {
-		m_name = nName;
-		m_ChunkSize = nChunkSize;
-		wavMetadata fileMetadata = getFileMetadata(m_name);
-		m_qteSamples = fileMetadata.Subchunk2Size / fileMetadata.BlockAlign;
-		m_samplerate = fileMetadata.SampleRate;
-		m_rightSamples = new T[(m_qteSamples / m_ChunkSize + 1) * m_ChunkSize]{};
-		m_leftSamples = new T[(m_qteSamples / m_ChunkSize + 1) * m_ChunkSize]{};
-		getAudioData(m_name, m_leftSamples, m_rightSamples, &m_qteSamples, &adresses::data);
-		printMetadata(fileMetadata);
-	}
+	//soundSample(const unsigned int nQtesample, unsigned int nSampleRate, unsigned int nChunkSize, string nName) {
+	//	m_SamplesSizeBytes = nQtesample;
+	//	m_ChunkSize = nChunkSize;
+	//	m_samplerate = nSampleRate;
+	//	m_name = nName;
+	//	m_Samples = new char[(m_SamplesSizeBytes / m_ChunkSize + 1) * m_ChunkSize]{};
+	//}
+
+	//soundSample(string nName, const unsigned int nChunkSize) {
+	//	m_name = nName;
+	//	m_ChunkSize = nChunkSize;
+	//	wavMetadata fileMetadata = getFileMetadata(m_name);
+	//	m_SamplesSizeBytes = fileMetadata.Subchunk2Size;
+	//	m_samplerate = fileMetadata.SampleRate;
+	//	//if (m_Samples) delete[] m_Samples;
+	//	m_Samples = new char[(m_SamplesSizeBytes / m_ChunkSize + 1) * m_ChunkSize]{};
+	//	getAudioData(m_name, m_Samples, m_SamplesSizeBytes, &adresses::data, 24, 0);
+	//}
 
 	soundSample() {}
 
 	~soundSample() {
-		delete[] m_leftSamples, m_rightSamples;
+		delete[] m_Samples;
+	}
+
+	void init(string nName, const unsigned int nChunkSize, const unsigned int nBitPerSamples, unsigned int nChannels = 1) {
+		m_name = nName;
+		m_ChunkSize = nChunkSize;
+		m_Channels = nChannels;
+		m_BitPerSamples = nBitPerSamples;
+		wavMetadata fileMetadata = getFileMetadata(m_name);
+		m_SamplesSizeBytes = fileMetadata.Subchunk2Size / m_Channels / 3 * (m_BitPerSamples / 8);
+		m_samplerate = fileMetadata.SampleRate;
+		m_Samples = new char[((m_SamplesSizeBytes * (m_BitPerSamples / 8) * nChannels) / m_ChunkSize + 1) * m_ChunkSize]{};
+		getAudioData(m_name, m_Samples, fileMetadata.Subchunk2Size, &adresses::data, m_BitPerSamples, m_Channels);
 	}
 };
 
 //file d'attente des son à jouer
-template<class T>
 class soundQueue {
 public:
 	static const unsigned int m_queueSize = 1<<6;
 	unsigned int m_size = 0;
-	soundSampleIterator<T> m_queue[m_queueSize];
+	soundSampleIterator m_queue[m_queueSize];
 
-	bool append(soundSample<T>& nSound) {
+	soundQueue(){}
+
+	bool append(soundSample& nSound) {
 		for (unsigned int i = 0; i < m_queueSize; i++) {
-			if (m_queue[i].testRightOverflow()) {
-				m_queue[i].m_qteSamples = nSound.m_qteSamples;
-				m_queue[i].m_leftSamples = nSound.m_leftSamples;
-				m_queue[i].m_rightSamples = nSound.m_rightSamples;
+			if (m_queue[i].testOverflow()) {
+				m_queue[i].m_SamplesSize = nSound.m_SamplesSizeBytes;
+				m_queue[i].m_Samples = nSound.m_Samples;
 				m_size++;
 				return true;
 			}
@@ -107,44 +103,20 @@ public:
 	}
 
 	void remove(const unsigned int element) {
-		m_queue[element].m_qteSamples = 0;
-		m_queue[element].m_currentRightOffset = 1U;
-		m_queue[element].m_currentLeftOffset = 1U;
+		m_queue[element].m_SamplesSize = 0;
+		m_queue[element].m_currentOffset = 0;
 	}
 
-	/*unsigned int size() {
-		return m_size;
-	}*/
-
-	/*void append(soundSample<T>& nSound) {
-		m_queue.push_back(soundSampleIterator<T>(nSound.m_qteSamples, nSound.m_leftSamples, nSound.m_rightSamples));
-	}*/
-
-	vector<T*> getLeftOffsetQueue(const unsigned int nqteSample) {
-		vector<T*> offsetQueue;
+	vector<char*> getOffsetQueue(const unsigned int nqteSample) {
+		vector<char*> offsetQueue;
 		for (unsigned int i = 0; i < m_queueSize; i++) {
-			if (!m_queue[i].testLeftOverflow()) {
-				offsetQueue.push_back(m_queue[i].getLeftBufferOffsetPointer());
-				m_queue[i].moveLeftBufferPointer(nqteSample);
+			if (!m_queue[i].testOverflow()) {
+				offsetQueue.push_back(m_queue[i].getBufferOffsetPointer());
+				m_queue[i].moveBufferPointer(nqteSample);
 			}
 			else {
 				this->remove(i);
-				m_size--;
-			}
-		}
-		return offsetQueue;
-	}
-
-	vector<T*> getRightOffsetQueue(const unsigned int nqteSample) {
-		vector<T*> offsetQueue;
-		for (unsigned int i = 0; i < m_queueSize; i++) {
-			if (!m_queue[i].testRightOverflow()) {
-				offsetQueue.push_back(m_queue[i].getRightBufferOffsetPointer());
-				m_queue[i].moveRightBufferPointer(nqteSample);
-			}
-			else {
-				this->remove(i);
-				m_size--;
+				m_size-= m_size!=0;
 			}
 		}
 		return offsetQueue;
